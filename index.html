@@ -35,7 +35,7 @@ var CFG = {
 };
 
 /* =========================
-   Units (distinct ranges, bullets, speeds)
+   Units (distinct bullet speeds)
    ========================= */
 function makeUnits(){
   return [
@@ -44,28 +44,28 @@ function makeUnits(){
      fireRate:0.9, dmg:4,
      bSpeed:CFG.designH*0.25,  // slow
      bR:CFG.designW*0.006,
-     gun:"bb", hp:25, range: CFG.designH*0.20},   // shortest
+     gun:"bb", hp:25, range: CFG.designH*0.20},
 
     {id:"Pistol", color:"#78a9ff", bullet:"#cfe0ff", bulletType:"line", cost:3,
      speed:CFG.designH*0.11, r:CFG.designW*0.016,
      fireRate:0.7, dmg:7,
      bSpeed:CFG.designH*0.28,  // slow
      bR:CFG.designW*0.007,
-     gun:"pistol", hp:50, range: CFG.designH*0.30}, // medium
+     gun:"pistol", hp:50, range: CFG.designH*0.30},
 
     {id:"AR", color:"#ffd275", bullet:"#fff0c7", bulletType:"rect", cost:4,
      speed:CFG.designH*0.12, r:CFG.designW*0.015,
      fireRate:0.30, dmg:3,
      bSpeed:CFG.designH*0.70,  // fast
      bR:CFG.designW*0.006,
-     gun:"ar", hp:75, range: CFG.designH*0.40},     // long
+     gun:"ar", hp:75, range: CFG.designH*0.40},
 
     {id:"Laser", color:"#ff57c4", bullet:"#ffc3ec", bulletType:"beam", cost:5,
      speed:CFG.designH*0.13, r:CFG.designW*0.014,
      fireRate:0.50, dmg:10,
      bSpeed:CFG.designH*0.45,  // medium
      bR:CFG.designW*0.005,
-     gun:"laser", hp:100, range: CFG.designH*0.55}  // longest
+     gun:"laser", hp:100, range: CFG.designH*0.55}
   ];
 }
 var UNITS = makeUnits();
@@ -134,20 +134,12 @@ var AudioFX=(function(){
 /* =========================
    Game state
    ========================= */
-var state = "start"; // start | playing | win | lose
+var state = "start";
 var arena = { x:CFG.arenaPad, y:CFG.arenaPad, w:CFG.designW-CFG.arenaPad*2, h:CFG.designH-CFG.footerH-CFG.arenaPad*2 };
 var player = { score:0, hp:CFG.baseHP, energy:CFG.energyMax, selectedCard:-1, selectedUnit:null };
 var enemy  = { score:0, hp:CFG.baseHP, energy:CFG.energyMax, aiTimer:0 };
 
 var units=[], bullets=[], housingP=[], housingE=[];
-
-/* =========================
-   Helpers
-   ========================= */
-function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
-function dist(ax,ay,bx,by){ var dx=ax-bx, dy=ay-by; return Math.sqrt(dx*dx+dy*dy); }
-function dist2(ax,ay,bx,by){ var dx=ax-bx, dy=ay-by; return dx*dx+dy*dy; }
-function rectsOverlap(a,b){ return !(a.x+a.w<b.x || a.x>b.x+b.w || a.y+a.h<b.y || a.y>b.y+b.h); }
 
 /* =========================
    Procedural housing placement
@@ -178,6 +170,14 @@ function resetGame(){
 resetGame();
 
 /* =========================
+   Helpers
+   ========================= */
+function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+function dist(ax,ay,bx,by){ var dx=ax-bx, dy=ay-by; return Math.sqrt(dx*dx+dy*dy); }
+function dist2(ax,ay,bx,by){ var dx=ax-bx, dy=ay-by; return dx*dx+dy*dy; }
+function rectsOverlap(a,b){ return !(a.x+a.w<b.x || a.x>b.x+b.w || a.y+a.h<b.y || a.y>b.y+b.h); }
+
+/* =========================
    Spawning
    ========================= */
 function spawnUnitAt(side, idx, x, y){
@@ -192,7 +192,7 @@ function spawnUnitAt(side, idx, x, y){
     bSpeed:ar.bSpeed, bR:ar.bR,
     dmg:ar.dmg, cooldown:0,
     alive:true, gun:ar.gun,
-    hp: ar.hp,
+    hp: ar.hp, maxHp: ar.hp,
     range: ar.range,
     targetX: undefined, targetY: undefined,
     targetUnit: null, targetHouse: null
@@ -224,34 +224,38 @@ function enemySpawnTick(dt){
 }
 
 /* =========================
-   Enemy AI (explicit targets, stop at range)
+   Enemy AI (prioritization, squad spawning, stop at range)
    ========================= */
 function enemyAI(dt){
   enemy.aiTimer -= dt;
   if (enemy.aiTimer <= 0){
     enemy.aiTimer = 1.6 + Math.random()*1.6;
 
-    // choose an enemy unit to command
+    // Squad spawning: if enough energy, spawn 2–3 units together
+    if (enemy.energy >= 6 && Math.random() < 0.5){
+      var count = 2 + (Math.random()<0.5?1:0);
+      for (var k=0;k<count;k++) spawnEnemyAuto();
+    }
+
+    // pick an enemy unit to command
     var candidates = units.filter(function(u){ return u.side==="enemy" && u.alive; });
     if (!candidates.length) return;
     var unit = candidates[(Math.random()*candidates.length)|0];
 
-    // reset movement; AI uses explicit targeting only
-    unit.targetUnit = null;
-    unit.targetHouse = null;
-    unit.targetX = undefined;
-    unit.targetY = undefined;
+    // reset movement; explicit targeting only
+    unit.targetUnit = null; unit.targetHouse = null;
+    unit.targetX = undefined; unit.targetY = undefined;
 
-    // choose player unit or house
-    if (Math.random() < 0.5){
-      var pus = units.filter(function(u){ return u.side==="player" && u.alive; });
-      if (pus.length) unit.targetUnit = pus[(Math.random()*pus.length)|0];
+    // prioritize low HP houses; otherwise focus dangerous player units (by dmg)
+    var ph = housingP.filter(function(h){ return h.hp>0; }).sort(function(a,b){ return a.hp-b.hp; });
+    if (ph.length && Math.random() < 0.6){
+      unit.targetHouse = ph[0];
     } else {
-      var ph = housingP.filter(function(h){ return h.hp>0; });
-      if (ph.length) unit.targetHouse = ph[(Math.random()*ph.length)|0];
+      var pus = units.filter(function(u){ return u.side==="player" && u.alive; }).sort(function(a,b){ return b.dmg - a.dmg; });
+      if (pus.length) unit.targetUnit = pus[0];
     }
 
-    // only wander if no target exists
+    // wander only if no target exists
     if (!unit.targetUnit && !unit.targetHouse){
       unit.targetX = arena.x + Math.random()*arena.w;
       unit.targetY = arena.y + arena.h*(0.6 + Math.random()*0.4);
@@ -373,7 +377,7 @@ function update(dt){
     if (consumed){ input.down=false; }
   }
 
-  // Enemy AI (commands)
+  // Enemy AI (commands + spawning)
   enemyAI(dt);
   enemySpawnTick(dt);
 
@@ -601,8 +605,19 @@ function drawUnits(){
   ctx.save();
   for (var i=0;i<units.length;i++){
     var u=units[i], p=toScreen(u.x,u.y);
+
+    // Unit body
     ctx.fillStyle=u.color;
     ctx.beginPath(); ctx.arc(p.x,p.y,u.r*view.scale,0,Math.PI*2); ctx.fill();
+
+    // Health bar (above unit)
+    var barW = u.r*2*view.scale, barH = 4*view.scale;
+    var hpPct = clamp(u.hp / u.maxHp, 0, 1);
+    var bx = p.x - barW/2, by = p.y - u.r*view.scale - 10*view.scale;
+    ctx.fillStyle = "#1a2a3f";
+    ctx.fillRect(bx, by, barW, barH);
+    ctx.fillStyle = (u.side==="player")?CFG.accentCyan:CFG.accentMagenta;
+    ctx.fillRect(bx, by, barW*hpPct, barH);
 
     // selection ring for player's selected unit
     if (u === player.selectedUnit){
@@ -628,7 +643,7 @@ function drawBullets(){
       ctx.lineWidth=2*view.scale;
       ctx.beginPath();
       ctx.moveTo(p.x, p.y);
-      ctx.lineTo(p.x - b.vx*0.01, p.y - b.vy*0.01);
+      ctx.lineTo(p.x - b.vx*0.01, p.y - b.vy*0.01); // shortened streak
       ctx.stroke();
     }
     else if (b.type==="rect"){ // AR squares
@@ -636,23 +651,20 @@ function drawBullets(){
       var s=3*view.scale;
       ctx.fillRect(p.x-s, p.y-s, s*2, s*2);
     }
-    else if (b.type==="beam"){ // Laser cartoon beam (medium speed)
+    else if (b.type==="beam"){ // Laser cartoon beam
       var len = 20 * view.scale;
       var norm = Math.sqrt(b.vx*b.vx + b.vy*b.vy) || 1;
       var dx = (b.vx/norm) * len;
       var dy = (b.vy/norm) * len;
 
-      // white inner core
       ctx.strokeStyle = "#ffffff";
       ctx.lineWidth = 2*view.scale;
       ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - dx, p.y - dy); ctx.stroke();
 
-      // colored beam
       ctx.strokeStyle = b.color;
       ctx.lineWidth = 4*view.scale;
       ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - dx, p.y - dy); ctx.stroke();
 
-      // outer glow
       var grad = ctx.createLinearGradient(p.x, p.y, p.x - dx, p.y - dy);
       grad.addColorStop(0, b.color);
       grad.addColorStop(1, "rgba(255,255,255,0)");
@@ -701,7 +713,7 @@ function drawUnitCards(){
     ctx.shadowBlur=0; ctx.fillStyle=UNITS[i].color;
     ctx.beginPath(); ctx.arc(sc.x+sc.w/2, sc.y+sc.h*0.45, (L.size*0.20)*view.scale, 0, Math.PI*2); ctx.fill();
 
-    // Labels (larger monospace)
+    // Labels
     ctx.fillStyle=CFG.textLight; ctx.font=(24*view.scale)+"px monospace"; ctx.textAlign="center";
     ctx.fillText(UNITS[i].id, sc.x+sc.w/2, sc.y+sc.h-32*view.scale);
     ctx.fillStyle=CFG.textDim; ctx.font=(22*view.scale)+"px monospace";
@@ -741,11 +753,7 @@ function drawStartModal(){
 
   // Centered square ad placeholder
   var adSize = Math.min(box.w, box.h) * 0.6;
-  var adRect = {
-    x: box.x + (box.w - adSize)/2,
-    y: box.y + (box.h - adSize)/2,
-    w: adSize, h: adSize
-  };
+  var adRect = { x: box.x + (box.w - adSize)/2, y: box.y + (box.h - adSize)/2, w: adSize, h: adSize };
   var ads = rectToScreen(adRect);
   ctx.fillStyle="#143456";
   ctx.fillRect(ads.x, ads.y, ads.w, ads.h);
@@ -805,4 +813,3 @@ function rectsOverlap(a,b){ return !(a.x+a.w<b.x || a.x>b.x+b.w || a.y+a.h<b.y |
 </script>
 </body>
 </html>
-
