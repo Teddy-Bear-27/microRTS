@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover"/>
-<title>microRTS</title>
+<title>microRTS — Cartoon Clash</title>
 <style>
-  html,body{margin:0;padding:0;background:#0b1e35;color:#eaf3ff;height:100%;}
+  html,body{margin:0;padding:0;height:100%;background:#84d7ff;color:#000;font-family:system-ui,Segoe UI,Roboto,Arial;}
   canvas{display:block;touch-action:none;}
 </style>
 </head>
@@ -24,48 +24,42 @@ var CFG = {
   footerH: 280,
   baseHP: 100,
   energyMax: 10, energyRegenPerSec: 1.0,
-  shadowColor: "rgba(0,0,0,0.45)", uiShadow: 12,
-  bg0: "#071427", bg1: "#0b1e35",
-  grassTop: "#2e5d2e", grassBottom: "#1f3d1f",
-  cardOn: "#143456", cardOff: "#10243f",
-  accentCyan: "#4fd3ff", accentBlue: "#78a9ff",
-  accentGold: "#ffd275", accentMagenta: "#ff57c4",
-  textLight: "#eaf3ff", textDim: "#9fb7d9",
-  playerHousing: "#1f7bd6", enemyHousing: "#cb4c36"
+  outline: "#000",
+  uiOutline: 3,
+  skyTop: "#9be1ff",
+  skyBottom: "#84d7ff",
+  grass: "#55d66b",
+  patchLight: "#7beb8a",
+  patchDark: "#3bbf53",
+  playerHousing: "#4fa2ff",
+  enemyHousing: "#ff5a5a",
+  accentCyan: "#00e5ff",
+  accentMagenta: "#ff3fbf",
+  accentGold: "#ffd93d",
+  accentBlue: "#4f9dff",
+  cardOn: "#ffe88a",
+  cardOff: "#fff2c7",
+  textDark: "#1b1b1b",
+  cardText: "#1b1b1b"
 };
 
 /* =========================
-   Units (distinct bullet speeds)
+   Units
    ========================= */
 function makeUnits(){
   return [
-    {id:"BB", color:"#84ffd2", bullet:"#b7ffe8", bulletType:"dot", cost:2,
-     speed:CFG.designH*0.10, r:CFG.designW*0.016,
-     fireRate:0.9, dmg:4,
-     bSpeed:CFG.designH*0.25,  // slow
-     bR:CFG.designW*0.006,
-     gun:"bb", hp:25, range: CFG.designH*0.20},
-
-    {id:"Pistol", color:"#78a9ff", bullet:"#cfe0ff", bulletType:"line", cost:3,
-     speed:CFG.designH*0.11, r:CFG.designW*0.016,
-     fireRate:0.7, dmg:7,
-     bSpeed:CFG.designH*0.28,  // slow
-     bR:CFG.designW*0.007,
-     gun:"pistol", hp:50, range: CFG.designH*0.30},
-
-    {id:"AR", color:"#ffd275", bullet:"#fff0c7", bulletType:"rect", cost:4,
-     speed:CFG.designH*0.12, r:CFG.designW*0.015,
-     fireRate:0.30, dmg:3,
-     bSpeed:CFG.designH*0.70,  // fast
-     bR:CFG.designW*0.006,
-     gun:"ar", hp:75, range: CFG.designH*0.40},
-
-    {id:"Laser", color:"#ff57c4", bullet:"#ffc3ec", bulletType:"beam", cost:5,
-     speed:CFG.designH*0.13, r:CFG.designW*0.014,
-     fireRate:0.50, dmg:10,
-     bSpeed:CFG.designH*0.45,  // medium
-     bR:CFG.designW*0.005,
-     gun:"laser", hp:100, range: CFG.designH*0.55}
+    {id:"BB", color:"#00ffcc", bullet:"#c8fff0", bulletType:"dot", cost:2,
+     speed:CFG.designH*0.10, r:CFG.designW*0.020, fireRate:0.9, dmg:4,
+     bSpeed:CFG.designH*0.25, bR:CFG.designW*0.012, gun:"bb", hp:25, range: CFG.designH*0.20},
+    {id:"Pistol", color:"#4fa2ff", bullet:"#d9eaff", bulletType:"line", cost:3,
+     speed:CFG.designH*0.11, r:CFG.designW*0.020, fireRate:0.7, dmg:7,
+     bSpeed:CFG.designH*0.28, bR:CFG.designW*0.014, gun:"pistol", hp:50, range: CFG.designH*0.30},
+    {id:"AR", color:"#ffd93d", bullet:"#fff3c2", bulletType:"rect", cost:4,
+     speed:CFG.designH*0.12, r:CFG.designW*0.020, fireRate:0.30, dmg:3,
+     bSpeed:CFG.designH*0.70, bR:CFG.designW*0.010, gun:"ar", hp:75, range: CFG.designH*0.40},
+    {id:"Laser", color:"#ff3fbf", bullet:"#ffc3ec", bulletType:"beam", cost:5,
+     speed:CFG.designH*0.13, r:CFG.designW*0.020, fireRate:0.50, dmg:10,
+     bSpeed:CFG.designH*0.45, bR:CFG.designW*0.012, gun:"laser", hp:100, range: CFG.designH*0.55}
   ];
 }
 var UNITS = makeUnits();
@@ -76,7 +70,6 @@ var UNITS = makeUnits();
 var canvas = document.getElementById("game");
 var ctx = canvas.getContext("2d");
 var view = { w:0,h:0,scale:1,ox:0,oy:0 };
-
 function resize(){
   var ww = window.innerWidth, wh = window.innerHeight;
   canvas.width = ww; canvas.height = wh;
@@ -86,7 +79,6 @@ function resize(){
   view.ox = (ww-view.w)/2; view.oy = (wh-view.h)/2;
 }
 window.addEventListener("resize", resize); resize();
-
 function toScreen(x,y){ return { x:view.ox+x*view.scale, y:view.oy+y*view.scale }; }
 function toVirtual(x,y){ return { x:(x-view.ox)/view.scale, y:(y-view.oy)/view.scale }; }
 function rectToScreen(r){ var a=toScreen(r.x,r.y), b=toScreen(r.x+r.w,r.y+r.h); return { x:a.x, y:a.y, w:b.x-a.x, h:b.y-a.y }; }
@@ -101,107 +93,92 @@ window.addEventListener("touchstart", function(e){ var t=e.touches[0]; var p=toV
 window.addEventListener("touchend", function(){ input.down=false; });
 
 /* =========================
-   Audio (simple SFX)
-   ========================= */
-var AudioFX=(function(){
-  var ac, master;
-  function ensure(){
-    if (ac) return;
-    try{
-      ac = new (window.AudioContext||window.webkitAudioContext)();
-      master = ac.createGain(); master.gain.value = 0.22; master.connect(ac.destination);
-    }catch(e){}
-  }
-  function gun(t){
-    if (!ac) return;
-    var osc = ac.createOscillator(), g = ac.createGain(), now=ac.currentTime;
-    var dur=0.08, f0=340, f1=180, type="square";
-    if (t==="pistol"){type="triangle"; f0=700; f1=240; dur=0.09;}
-    if (t==="ar"){type="sawtooth"; f0=520; f1=320; dur=0.05;}
-    if (t==="laser"){type="sine"; f0=1200; f1=600; dur=0.11;}
-    osc.type=type;
-    osc.frequency.setValueAtTime(f0, now);
-    osc.frequency.exponentialRampToValueAtTime(Math.max(90,f1), now+dur);
-    g.gain.setValueAtTime(0.0001, now);
-    g.gain.exponentialRampToValueAtTime(0.5, now+0.01);
-    g.gain.exponentialRampToValueAtTime(0.0001, now+dur);
-    osc.connect(g); g.connect(master);
-    osc.start(now); osc.stop(now+dur+0.02);
-  }
-  return { ensure:ensure, gun:gun };
-})();
-
-/* =========================
    Game state
    ========================= */
-var state = "start";
-var arena = { x:CFG.arenaPad, y:CFG.arenaPad, w:CFG.designW-CFG.arenaPad*2, h:CFG.designH-CFG.footerH-CFG.arenaPad*2 };
-var player = { score:0, hp:CFG.baseHP, energy:CFG.energyMax, selectedCard:-1, selectedUnit:null };
-var enemy  = { score:0, hp:CFG.baseHP, energy:CFG.energyMax, aiTimer:0 };
-
-var units=[], bullets=[], housingP=[], housingE=[];
-
-/* =========================
-   Procedural housing placement
-   ========================= */
-function resetGame(){
-  player.score=0; player.hp=CFG.baseHP; player.energy=CFG.energyMax; player.selectedCard=-1; player.selectedUnit=null;
-  enemy.score=0; enemy.hp=CFG.baseHP; enemy.energy=CFG.energyMax; enemy.aiTimer=0;
-  units=[]; bullets=[]; housingP=[]; housingE=[];
-
-  var hw=CFG.designW*0.12, hh=CFG.designH*0.07;
-  function place(list, zoneY, zoneH){
-    var tries=0;
-    while(list.length<5 && tries<400){
-      var x = arena.x + Math.random()*(arena.w - hw);
-      var y = zoneY + Math.random()*(zoneH - hh);
-      var rect = { x:x, y:y, w:hw, h:hh, hp:100 };
-      var ok = true;
-      for (var i=0;i<list.length;i++){
-        if (rectsOverlap(rect, list[i])) { ok=false; break; }
-      }
-      if (ok) list.push(rect);
-      tries++;
-    }
-  }
-  place(housingE, arena.y + arena.h*0.05, arena.h*0.25);   // enemy top band
-  place(housingP, arena.y + arena.h*0.70, arena.h*0.25);   // player bottom band
-}
-resetGame();
+var state="start";
+var gameStartDelay=0; // AI grace period
+var arena={x:CFG.arenaPad,y:CFG.arenaPad,w:CFG.designW-CFG.arenaPad*2,h:CFG.designH-CFG.footerH-CFG.arenaPad*2};
+var player={score:0,hp:CFG.baseHP,energy:CFG.energyMax,selectedCard:-1,selectedUnit:null};
+var enemy={score:0,hp:CFG.baseHP,energy:CFG.energyMax,aiTimer:0};
+var units=[],bullets=[],housingP=[],housingE=[];
+var grassPatchesLight=[],grassPatchesDark=[];
 
 /* =========================
    Helpers
    ========================= */
-function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
-function dist(ax,ay,bx,by){ var dx=ax-bx, dy=ay-by; return Math.sqrt(dx*dx+dy*dy); }
-function dist2(ax,ay,bx,by){ var dx=ax-bx, dy=ay-by; return dx*dx+dy*dy; }
-function rectsOverlap(a,b){ return !(a.x+a.w<b.x || a.x>b.x+b.w || a.y+a.h<b.y || a.y>b.y+b.h); }
-
-/* =========================
-   Spawning
-   ========================= */
-function spawnUnitAt(side, idx, x, y){
-  var ar = UNITS[idx], src = side==="player"?player:enemy;
-  if (src.energy < ar.cost) return false;
-  units.push({
-    side: side,
-    x:x, y:y,
-    r:ar.r, color:ar.color,
-    bulletColor:ar.bullet, bulletType:ar.bulletType,
-    speed:ar.speed, fireRate:ar.fireRate,
-    bSpeed:ar.bSpeed, bR:ar.bR,
-    dmg:ar.dmg, cooldown:0,
-    alive:true, gun:ar.gun,
-    hp: ar.hp, maxHp: ar.hp,
-    range: ar.range,
-    targetX: undefined, targetY: undefined,
-    targetUnit: null, targetHouse: null
-  });
-  src.energy -= ar.cost;
-  AudioFX.ensure();
-  return true;
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+function dist(ax,ay,bx,by){var dx=ax-bx,dy=ay-by;return Math.sqrt(dx*dx+dy*dy);}
+function dist2(ax,ay,bx,by){var dx=ax-bx,dy=ay-by;return dx*dx+dy*dy;}
+function rectsOverlap(a,b){return !(a.x+a.w<b.x||a.x>b.x+b.w||a.y+a.h<b.y||a.y>b.y+b.h);}
+function circleIntersectsRect(cx,cy,cr,rx,ry,rw,rh){
+  var nearestX = clamp(cx, rx, rx+rw);
+  var nearestY = clamp(cy, ry, ry+rh);
+  var dx = cx - nearestX, dy = cy - nearestY;
+  return (dx*dx + dy*dy) <= cr*cr;
 }
 
+/* =========================
+   Grass + Housing
+   ========================= */
+function generateGrassPatches(){
+  grassPatchesLight=[]; grassPatchesDark=[];
+  var pad=4;
+  for(let i=0;i<50;i++){
+    let w=60,h=22;
+    let x=arena.x+pad+Math.random()*(arena.w-w-pad*2);
+    let y=arena.y+pad+Math.random()*(arena.h-h-pad*2);
+    grassPatchesLight.push({x:x,y:y,w:w,h:h,r:8});
+  }
+  for(let j=0;j<30;j++){
+    let w=40,h=18;
+    let x=arena.x+pad+Math.random()*(arena.w-w-pad*2);
+    let y=arena.y+pad+Math.random()*(arena.h-h-pad*2);
+    grassPatchesDark.push({x:x,y:y,w:w,h:h,r:6});
+  }
+}
+function resetGame(){
+  player.score=0;player.hp=CFG.baseHP;player.energy=CFG.energyMax;player.selectedCard=-1;player.selectedUnit=null;
+  enemy.score=0;enemy.hp=CFG.baseHP;enemy.energy=CFG.energyMax;enemy.aiTimer=0;
+  units=[];bullets=[];housingP=[];housingE=[];
+  var hw=CFG.designW*0.14,hh=CFG.designH*0.08;
+  function place(list,zoneY,zoneH){
+    var tries=0;
+    while(list.length<4 && tries<400){
+      var x=arena.x+Math.random()*(arena.w-hw);
+      var y=zoneY+Math.random()*(zoneH-hh);
+      var ok=true;
+      for(var i=0;i<list.length;i++){
+        var b=list[i], dx=(x+hw/2)-(b.x+b.w/2), dy=(y+hh/2)-(b.y+b.h/2);
+        if (Math.sqrt(dx*dx+dy*dy) < Math.min(hw,hh)*1.1){ ok=false; break; }
+      }
+      if(ok) list.push({x:x,y:y,w:hw,h:hh,hp:100});
+      tries++;
+    }
+  }
+  place(housingE,arena.y+arena.h*0.05,arena.h*0.25);
+  place(housingP,arena.y+arena.h*0.70,arena.h*0.25);
+  generateGrassPatches();
+}
+resetGame();
+
+/* =========================
+   Spawning + AI
+   ========================= */
+function spawnUnitAt(side,idx,x,y){
+  var ar=UNITS[idx],src=(side==="player"?player:enemy);
+  if(src.energy<ar.cost) return false;
+  units.push({
+    side:side,x:x,y:y,r:ar.r,color:ar.color,
+    bulletColor:ar.bullet,bulletType:ar.bulletType,
+    speed:ar.speed,fireRate:ar.fireRate,bSpeed:ar.bSpeed,bR:ar.bR,
+    dmg:ar.dmg,cooldown:0,alive:true,gun:ar.gun,
+    hp:ar.hp,maxHp:ar.hp,range:ar.range,
+    targetX:undefined,targetY:undefined,targetUnit:null,targetHouse:null,
+    firePop:0
+  });
+  src.energy-=ar.cost;
+  return true;
+}
 function spawnEnemyAuto(){
   var intact = housingE.filter(function(h){ return h.hp>0; });
   var spawnX = arena.x + Math.random()*arena.w;
@@ -216,37 +193,23 @@ function spawnEnemyAuto(){
   var idx = options[(Math.random()*options.length)|0];
   spawnUnitAt("enemy", idx, spawnX, spawnY);
 }
-
 function enemySpawnTick(dt){
   if (units.filter(function(u){return u.side==="enemy";}).length < 12){
     if (Math.random() < dt*0.25){ spawnEnemyAuto(); }
   }
 }
-
-/* =========================
-   Enemy AI (prioritization, squad spawning, stop at range)
-   ========================= */
 function enemyAI(dt){
   enemy.aiTimer -= dt;
   if (enemy.aiTimer <= 0){
-    enemy.aiTimer = 1.6 + Math.random()*1.6;
-
-    // Squad spawning: if enough energy, spawn 2–3 units together
-    if (enemy.energy >= 6 && Math.random() < 0.5){
+    enemy.aiTimer = 1.5 + Math.random()*1.6;
+    if (enemy.energy >= 6 && Math.random() < 0.55){
       var count = 2 + (Math.random()<0.5?1:0);
       for (var k=0;k<count;k++) spawnEnemyAuto();
     }
-
-    // pick an enemy unit to command
     var candidates = units.filter(function(u){ return u.side==="enemy" && u.alive; });
     if (!candidates.length) return;
     var unit = candidates[(Math.random()*candidates.length)|0];
-
-    // reset movement; explicit targeting only
-    unit.targetUnit = null; unit.targetHouse = null;
-    unit.targetX = undefined; unit.targetY = undefined;
-
-    // prioritize low HP houses; otherwise focus dangerous player units (by dmg)
+    unit.targetUnit = null; unit.targetHouse = null; unit.targetX = undefined; unit.targetY = undefined;
     var ph = housingP.filter(function(h){ return h.hp>0; }).sort(function(a,b){ return a.hp-b.hp; });
     if (ph.length && Math.random() < 0.6){
       unit.targetHouse = ph[0];
@@ -254,8 +217,6 @@ function enemyAI(dt){
       var pus = units.filter(function(u){ return u.side==="player" && u.alive; }).sort(function(a,b){ return b.dmg - a.dmg; });
       if (pus.length) unit.targetUnit = pus[0];
     }
-
-    // wander only if no target exists
     if (!unit.targetUnit && !unit.targetHouse){
       unit.targetX = arena.x + Math.random()*arena.w;
       unit.targetY = arena.y + arena.h*(0.6 + Math.random()*0.4);
@@ -267,17 +228,18 @@ function enemyAI(dt){
    UI layouts
    ========================= */
 function cardsLayout(){
-  var size=CFG.designW*0.16, gap=CFG.designW*0.02;
+  var size=CFG.designW*0.18; // bigger cards
+  var gap=CFG.designW*0.02;
   var totalW=UNITS.length*size+(UNITS.length-1)*gap;
   var startX=arena.x+(arena.w-totalW)/2;
-  var y = CFG.designH - CFG.footerH + (CFG.footerH*0.18);
+  var y = CFG.designH - CFG.footerH + (CFG.footerH*0.10);
   return { size:size, gap:gap, startX:startX, y:y };
 }
 function energyLayout(){
-  var bars=CFG.energyMax, segW=CFG.designW*0.03, segH=CFG.designH*0.010, gap=CFG.designW*0.010;
+  var bars=CFG.energyMax, segW=CFG.designW*0.035, segH=CFG.designH*0.016, gap=CFG.designW*0.012;
   var totalW=bars*segW+(bars-1)*gap;
   var startX=arena.x+(arena.w-totalW)/2;
-  var y = CFG.designH - CFG.footerH + (CFG.footerH*0.74);
+  var y = CFG.designH - CFG.footerH + (CFG.footerH*0.80);
   return { bars:bars, segW:segW, segH:segH, gap:gap, startX:startX, y:y };
 }
 function cardIndex(vx,vy){
@@ -290,7 +252,7 @@ function cardIndex(vx,vy){
 }
 
 /* =========================
-   Update loop
+   Loop
    ========================= */
 var last = performance.now();
 function loop(now){
@@ -302,8 +264,9 @@ function loop(now){
 requestAnimationFrame(loop);
 
 function update(dt){
+  // Start screen: wait for tap to begin
   if (state==="start"){
-    if (input.down){ state="playing"; input.down=false; }
+    if (input.down){ state="playing"; gameStartDelay = 2.0; input.down=false; }
     return;
   }
   if (state!=="playing") return;
@@ -311,7 +274,7 @@ function update(dt){
   player.energy = clamp(player.energy + CFG.energyRegenPerSec*dt, 0, CFG.energyMax);
   enemy.energy  = clamp(enemy.energy  + CFG.energyRegenPerSec*dt*0.9, 0, CFG.energyMax);
 
-  // Player taps
+  // Player input
   if (input.down){
     var idx = cardIndex(input.x, input.y);
     var consumed = false;
@@ -325,37 +288,31 @@ function update(dt){
         var u=units[i];
         if (u.side!=="player" || !u.alive) continue;
         var d2=dist2(input.x,input.y,u.x,u.y);
-        if (d2 <= (u.r*2)*(u.r*2)){ selected=u; break; }
+        if (d2 <= Math.pow(u.r*2.2,2)){ selected=u; break; }
       }
       if (selected){
-        player.selectedUnit = selected;
-        consumed = true;
+        player.selectedUnit = selected; consumed = true;
       } else if (player.selectedCard!==-1 && input.y > arena.y + arena.h*0.5){
         spawnUnitAt("player", player.selectedCard, input.x, input.y);
-        player.selectedCard = -1;
-        consumed = true;
+        player.selectedCard = -1; consumed = true;
       } else if (player.selectedUnit){
-        // Explicit target: enemy unit or enemy house ONLY
+        // explicit targeting
         var targetSet = false;
-
         // enemy unit
         for (var j=0;j<units.length;j++){
-          var e=units[j];
-          if (e.side!=="enemy" || !e.alive) continue;
+          var e=units[j]; if (e.side!=="enemy" || !e.alive) continue;
           var d2e=dist2(input.x,input.y,e.x,e.y);
-          if (d2e <= (e.r*2.2)*(e.r*2.2)){
+          if (d2e <= Math.pow(e.r*2.4,2)){
             player.selectedUnit.targetUnit = e;
             player.selectedUnit.targetHouse = null;
             player.selectedUnit.targetX = undefined; player.selectedUnit.targetY = undefined;
             targetSet = true; break;
           }
         }
-
         // enemy house
         if (!targetSet){
           for (var h=0;h<housingE.length;h++){
-            var hs=housingE[h];
-            if (hs.hp<=0) continue;
+            var hs=housingE[h]; if (hs.hp<=0) continue;
             if (input.x>=hs.x && input.x<=hs.x+hs.w && input.y>=hs.y && input.y<=hs.y+hs.h){
               player.selectedUnit.targetHouse = hs;
               player.selectedUnit.targetUnit = null;
@@ -364,8 +321,7 @@ function update(dt){
             }
           }
         }
-
-        // move if tapping empty ground
+        // move
         if (!targetSet){
           player.selectedUnit.targetUnit = null;
           player.selectedUnit.targetHouse = null;
@@ -377,145 +333,127 @@ function update(dt){
     if (consumed){ input.down=false; }
   }
 
-  // Enemy AI (commands + spawning)
-  enemyAI(dt);
-  enemySpawnTick(dt);
+  // Enemy AI (respect 2s start delay)
+  if (gameStartDelay > 0){
+    gameStartDelay = Math.max(0, gameStartDelay - dt);
+  } else {
+    enemyAI(dt);
+    enemySpawnTick(dt);
+  }
 
-  // Units movement, collisions, firing
+  // Units movement + collisions + firing
   for (var i=0;i<units.length;i++){
-    var u = units[i];
-    if (!u.alive) continue;
+    var u=units[i]; if (!u.alive) continue;
 
-    // Intelligent approach when targeting a house: stop at range
-    if (u.targetHouse && u.targetHouse.hp > 0){
-      var cx = u.targetHouse.x + u.targetHouse.w/2;
-      var cy = u.targetHouse.y + u.targetHouse.h/2;
-      var dh = dist(u.x,u.y,cx,cy);
-
-      if (dh <= u.range){
-        // In range: hold position
-        u.targetX = undefined; u.targetY = undefined;
-      } else {
-        // Out of range: move towards center (will stop once in range)
-        u.targetX = cx; u.targetY = cy;
-      }
+    // Approach houses smartly
+    if (u.targetHouse && u.targetHouse.hp>0){
+      var cx=u.targetHouse.x+u.targetHouse.w/2, cy=u.targetHouse.y+u.targetHouse.h/2;
+      var dh=dist(u.x,u.y,cx,cy);
+      if (dh<=u.range){ u.targetX=undefined; u.targetY=undefined; }
+      else { u.targetX=cx; u.targetY=cy; }
     }
 
-    // Move toward location if set
+    // Move toward target
     if (u.targetX!==undefined && u.targetY!==undefined){
-      var dx = u.targetX - u.x, dy = u.targetY - u.y, d = Math.sqrt(dx*dx + dy*dy);
-      if (d > 2){ u.x += (dx/d) * u.speed * dt; u.y += (dy/d) * u.speed * dt; }
+      var dx=u.targetX-u.x, dy=u.targetY-u.y, d=Math.sqrt(dx*dx+dy*dy);
+      if (d>2){ u.x += (dx/d)*u.speed*dt; u.y += (dy/d)*u.speed*dt; }
     }
 
     // Keep in arena
     u.x = clamp(u.x, arena.x + u.r + 2, arena.x + arena.w - u.r - 2);
     u.y = clamp(u.y, arena.y + u.r + 2, arena.y + arena.h - u.r - 2);
 
-    // Housing collision (push away slightly to avoid hugging)
-    var hList = housingP.concat(housingE);
-    for (var h=0; h<hList.length; h++){
-      var hs = hList[h]; if (hs.hp<=0) continue;
-      var rect = { x:hs.x, y:hs.y, w:hs.w, h:hs.h };
-      var circ = { x:u.x - u.r, y:u.y - u.r, w:u.r*2, h:u.r*2 };
-      if (rectsOverlap(rect, circ)){
-        var cxr = hs.x + hs.w/2, cyr = hs.y + hs.h/2;
-        var dxp = u.x - cxr, dyp = u.y - cyr;
-        var m = Math.sqrt(dxp*dxp + dyp*dyp) || 1;
-        u.x += (dxp/m) * (CFG.designW*0.008);
-        u.y += (dyp/m) * (CFG.designH*0.008);
+    // Collide with houses (circle-rect separation)
+    var houses = housingP.concat(housingE);
+    for (var h=0;h<houses.length;h++){
+      var hs = houses[h]; if (hs.hp<=0) continue;
+      if (circleIntersectsRect(u.x,u.y,u.r,hs.x,hs.y,hs.w,hs.h)){
+        var nearestX = clamp(u.x, hs.x, hs.x+hs.w);
+        var nearestY = clamp(u.y, hs.y, hs.y+hs.h);
+        var dx = u.x - nearestX, dy = u.y - nearestY;
+        var len = Math.sqrt(dx*dx + dy*dy) || 1;
+        var push = (u.r - len) + 1;
+        u.x += (dx/len) * push;
+        u.y += (dy/len) * push;
         u.x = clamp(u.x, arena.x + u.r + 2, arena.x + arena.w - u.r - 2);
         u.y = clamp(u.y, arena.y + u.r + 2, arena.y + arena.h - u.r - 2);
       }
     }
 
-    // Unit vs unit separation
+    // Unit vs unit separation (circle-circle)
     for (var j=0;j<units.length;j++){
-      if (i===j) continue;
-      var v = units[j]; if (!v.alive) continue;
-      var dx2 = u.x - v.x, dy2 = u.y - v.y;
-      var dsep = Math.sqrt(dx2*dx2 + dy2*dy2);
-      var minD = u.r + v.r;
+      if (i===j) continue; var v=units[j]; if (!v.alive) continue;
+      var dx2=u.x-v.x, dy2=u.y-v.y, dsep=Math.sqrt(dx2*dx2+dy2*dy2), minD=u.r+v.r;
       if (dsep>0 && dsep<minD){
-        var overlap = (minD - dsep)/2;
-        var nx = dx2/dsep, ny = dy2/dsep;
+        var overlap=(minD-dsep)/2, nx=dx2/dsep, ny=dy2/dsep;
         u.x += nx*overlap; u.y += ny*overlap;
         v.x -= nx*overlap; v.y -= ny*overlap;
       }
     }
 
-    // Firing: explicit targets only, with range
+    // Firing
     u.cooldown -= dt;
-    if (u.cooldown <= 0){
+    if (u.cooldown<=0){
       if (u.targetUnit && u.targetUnit.alive){
-        var du = dist(u.x,u.y,u.targetUnit.x,u.targetUnit.y);
-        if (du <= u.range){
-          shootAt(u, u.targetUnit.x, u.targetUnit.y, null);
-          u.cooldown = u.fireRate; AudioFX.gun(u.gun);
+        var du=dist(u.x,u.y,u.targetUnit.x,u.targetUnit.y);
+        if (du<=u.range){
+          shootAt(u,u.targetUnit.x,u.targetUnit.y,null);
+          u.cooldown=u.fireRate; u.firePop=0.12;
         }
-      } else if (u.targetHouse && u.targetHouse.hp > 0){
-        var cx2 = u.targetHouse.x + u.targetHouse.w/2;
-        var cy2 = u.targetHouse.y + u.targetHouse.h/2;
-        var dh2 = dist(u.x,u.y,cx2,cy2);
-        if (dh2 <= u.range){
-          shootAt(u, cx2, cy2, u.targetHouse);
-          u.cooldown = u.fireRate; AudioFX.gun(u.gun);
+      } else if (u.targetHouse && u.targetHouse.hp>0){
+        var cx2=u.targetHouse.x+u.targetHouse.w/2, cy2=u.targetHouse.y+u.targetHouse.h/2;
+        var dh2=dist(u.x,u.y,cx2,cy2);
+        if (dh2<=u.range){
+          shootAt(u,cx2,cy2,u.targetHouse);
+          u.cooldown=u.fireRate; u.firePop=0.12;
         }
       }
     }
+    u.firePop = Math.max(0, u.firePop - dt*0.9);
   }
 
-  // Bullets update + collisions
+  // Bullets
   for (var b=0;b<bullets.length;b++){
-    var bu = bullets[b]; if (!bu.alive) continue;
+    var bu=bullets[b]; if (!bu.alive) continue;
     bu.x += bu.vx*dt; bu.y += bu.vy*dt;
 
     // bounds
     if (bu.x<arena.x || bu.x>arena.x+arena.w || bu.y<arena.y || bu.y>arena.y+arena.h){ bu.alive=false; continue; }
 
-    // hit units
+    // hit units (circle-circle)
     for (var m=0;m<units.length;m++){
-      var tu = units[m];
-      if (!tu.alive || tu.side===bu.side) continue;
-      var d2 = dist2(bu.x,bu.y,tu.x,tu.y);
-      var rr = bu.r + tu.r;
-      if (d2 <= rr*rr){
-        tu.hp -= bu.dmg;
-        bu.alive=false;
-        if (tu.hp <= 0){ tu.alive=false; if (bu.side==="player") player.score+=5; else enemy.score+=5; }
+      var tu=units[m]; if (!tu.alive || tu.side===bu.side) continue;
+      var d2=dist2(bu.x,bu.y,tu.x,tu.y), rr=bu.r+tu.r;
+      if (d2<=rr*rr){
+        tu.hp -= bu.dmg; bu.alive=false;
+        if (tu.hp<=0){ tu.alive=false; if (bu.side==="player") player.score+=5; else enemy.score+=5; }
         break;
       }
     }
     if (!bu.alive) continue;
 
-    // hit houses (targeted or incidental)
+    // hit houses (circle-rect)
     var targetsH = bu.targetHouse ? [bu.targetHouse] : ((bu.side==="player")?housingE:housingP);
     for (var q=0;q<targetsH.length;q++){
-      var hs = targetsH[q]; if (hs.hp<=0) continue;
-      var R = { x:hs.x, y:hs.y, w:hs.w, h:hs.h };
-      var BB = { x:bu.x - bu.r, y:bu.y - bu.r, w:bu.r*2, h:bu.r*2 };
-      if (rectsOverlap(R,BB)){
-        hs.hp = Math.max(0, hs.hp - bu.dmg);
-        bu.alive = false;
-        break;
+      var hs=targetsH[q]; if (hs.hp<=0) continue;
+      if (circleIntersectsRect(bu.x,bu.y,bu.r,hs.x,hs.y,hs.w,hs.h)){
+        hs.hp=Math.max(0, hs.hp - bu.dmg); bu.alive=false; break;
       }
     }
   }
 
-  // Prune
+  // prune
   units = units.filter(function(u){ return u.alive; });
   bullets = bullets.filter(function(b){ return b.alive; });
 
-  // Win/Lose (all houses destroyed)
+  // win/lose
   var allEnemyDown = housingE.every(function(h){ return h.hp<=0; });
   var allPlayerDown = housingP.every(function(h){ return h.hp<=0; });
   if (allEnemyDown) state="win"; else if (allPlayerDown) state="lose";
 }
 
-/* =========================
-   Shooting
-   ========================= */
-function shootAt(u, tx, ty, house){
-  var dx = tx - u.x, dy = ty - u.y, m = Math.sqrt(dx*dx + dy*dy)||1;
+function shootAt(u,tx,ty,house){
+  var dx=tx-u.x, dy=ty-u.y, m=Math.sqrt(dx*dx+dy*dy)||1;
   bullets.push({
     side:u.side, x:u.x, y:u.y,
     vx:(dx/m)*u.bSpeed, vy:(dy/m)*u.bSpeed,
@@ -529,13 +467,8 @@ function shootAt(u, tx, ty, house){
    Rendering
    ========================= */
 function render(){
-  // background
-  var s0=toScreen(0,0), s1=toScreen(CFG.designW, CFG.designH);
-  var grad=ctx.createLinearGradient(s0.x,s0.y,s0.x,s1.y);
-  grad.addColorStop(0,CFG.bg0); grad.addColorStop(1,CFG.bg1);
-  ctx.fillStyle=grad; ctx.fillRect(0,0,canvas.width,canvas.height);
-
-  drawArenaGrass();
+  drawBackground();
+  drawArena();
   drawHousing();
   drawUnits();
   drawBullets();
@@ -546,137 +479,117 @@ function render(){
   else if (state==="lose") drawEndModal(false);
 }
 
-function drawArenaGrass(){
-  var s=rectToScreen(arena);
-  var g = ctx.createLinearGradient(s.x, s.y, s.x, s.y+s.h);
-  g.addColorStop(0, CFG.grassTop);
-  g.addColorStop(1, CFG.grassBottom);
-  ctx.save();
-  ctx.shadowColor=CFG.shadowColor; ctx.shadowBlur=CFG.uiShadow;
-  ctx.beginPath(); ctx.rect(s.x,s.y,s.w,s.h); ctx.clip();
-  ctx.fillStyle = g; ctx.fillRect(s.x, s.y, s.w, s.h);
+function drawBackground(){
+  var s0=toScreen(0,0), s1=toScreen(CFG.designW, CFG.designH);
+  var sky=ctx.createLinearGradient(s0.x,s0.y,s0.x,s1.y);
+  sky.addColorStop(0,CFG.skyTop); sky.addColorStop(1,CFG.skyBottom);
+  ctx.fillStyle=sky; ctx.fillRect(0,0,canvas.width,canvas.height);
+}
 
-  ctx.globalAlpha = 0.06; ctx.fillStyle = "#ffffff";
-  for (var i=0;i<240;i++){
-    var gx = s.x + Math.random()*s.w;
-    var gy = s.y + Math.random()*s.h;
-    ctx.fillRect(gx, gy, 2*view.scale, 2*view.scale);
+function drawArena(){
+  var s=rectToScreen(arena);
+  ctx.fillStyle=CFG.grass;
+  roundRect(ctx,s.x,s.y,s.w,s.h,24*view.scale); // rounded battlefield border
+  ctx.fill();
+  ctx.lineWidth = CFG.uiOutline*view.scale; ctx.strokeStyle=CFG.outline; ctx.stroke();
+
+  // fixed patches
+  ctx.fillStyle = CFG.patchLight;
+  for (var i=0;i<grassPatchesLight.length;i++){
+    var g=grassPatchesLight[i], p=toScreen(g.x,g.y);
+    roundRect(ctx, p.x, p.y, g.w*view.scale, g.h*view.scale, g.r*view.scale); ctx.fill();
   }
-  ctx.globalAlpha = 0.20; ctx.fillStyle = "rgba(0,100,0,0.25)";
-  for (var j=0;j<200;j++){
-    var gx2 = s.x + Math.random()*s.w;
-    var gy2 = s.y + Math.random()*s.h;
-    ctx.fillRect(gx2, gy2, 1*view.scale, 3*view.scale);
+  ctx.fillStyle = CFG.patchDark;
+  for (var j=0;j<grassPatchesDark.length;j++){
+    var d=grassPatchesDark[j], ps=toScreen(d.x,d.y);
+    roundRect(ctx, ps.x, ps.y, d.w*view.scale, d.h*view.scale, d.r*view.scale); ctx.fill();
   }
-  ctx.globalAlpha = 1.0; ctx.restore();
 }
 
 function drawHousing(){
-  ctx.save();
-  ctx.shadowColor=CFG.shadowColor; ctx.shadowBlur=CFG.uiShadow;
-
-  // Player houses
+  // Player houses (skip destroyed)
   for (var i=0;i<housingP.length;i++){
-    var hp=housingP[i], sp=rectToScreen(hp);
-    ctx.fillStyle=CFG.playerHousing; ctx.fillRect(sp.x, sp.y, sp.w, sp.h);
+    var hp=housingP[i]; if (hp.hp<=0) continue;
+    var sp=rectToScreen(hp);
+    ctx.fillStyle=CFG.playerHousing; roundRect(ctx,sp.x,sp.y,sp.w,sp.h,12*view.scale); ctx.fill();
+    ctx.lineWidth = CFG.uiOutline*view.scale; ctx.strokeStyle = CFG.outline; ctx.stroke();
 
-    var pct=hp.hp/100;
-    ctx.globalAlpha=0.15; ctx.fillStyle=CFG.textLight;
-    ctx.fillRect(sp.x+6, sp.y+sp.h-16*view.scale, sp.w-12, 12*view.scale);
-    ctx.globalAlpha=1.0; ctx.fillStyle=CFG.accentCyan;
-    ctx.fillRect(sp.x+6, sp.y+sp.h-16*view.scale, (sp.w-12)*pct, 12*view.scale);
+    var pct=hp.hp/100, barW=sp.w-16*view.scale, barH=10*view.scale, bx=sp.x+8*view.scale, by=sp.y+sp.h-16*view.scale;
+    ctx.fillStyle="#000"; ctx.fillRect(bx-2,by-2,barW+4,barH+4);
+    ctx.fillStyle=CFG.accentCyan; ctx.fillRect(bx,by,barW*pct,barH);
   }
-
-  // Enemy houses
+  // Enemy houses (skip destroyed)
   for (var j=0;j<housingE.length;j++){
-    var he=housingE[j], se=rectToScreen(he);
-    ctx.fillStyle=CFG.enemyHousing; ctx.fillRect(se.x, se.y, se.w, se.h);
+    var he=housingE[j]; if (he.hp<=0) continue;
+    var se=rectToScreen(he);
+    ctx.fillStyle=CFG.enemyHousing; roundRect(ctx,se.x,se.y,se.w,se.h,12*view.scale); ctx.fill();
+    ctx.lineWidth = CFG.uiOutline*view.scale; ctx.strokeStyle = CFG.outline; ctx.stroke();
 
-    var pctE=he.hp/100;
-    ctx.globalAlpha=0.15; ctx.fillStyle=CFG.textLight;
-    ctx.fillRect(se.x+6, se.y+se.h-16*view.scale, se.w-12, 12*view.scale);
-    ctx.globalAlpha=1.0; ctx.fillStyle=CFG.accentMagenta;
-    ctx.fillRect(se.x+6, se.y+se.h-16*view.scale, (se.w-12)*pctE, 12*view.scale);
+    var pctE=he.hp/100, barW2=se.w-16*view.scale, barH2=10*view.scale, bx2=se.x+8*view.scale, by2=se.y+se.h-16*view.scale;
+    ctx.fillStyle="#000"; ctx.fillRect(bx2-2,by2-2,barW2+4,barH2+4);
+    ctx.fillStyle=CFG.accentMagenta; ctx.fillRect(bx2,by2,barW2*pctE,barH2);
   }
-  ctx.restore();
 }
 
 function drawUnits(){
-  ctx.save();
   for (var i=0;i<units.length;i++){
     var u=units[i], p=toScreen(u.x,u.y);
+    var sx = 1 + u.firePop*0.9, sy = 1 - u.firePop*0.4;
 
-    // Unit body
-    ctx.fillStyle=u.color;
-    ctx.beginPath(); ctx.arc(p.x,p.y,u.r*view.scale,0,Math.PI*2); ctx.fill();
+    ctx.save();
+    ctx.translate(p.x,p.y); ctx.scale(sx,sy);
+    ctx.lineWidth = CFG.uiOutline*view.scale; ctx.strokeStyle=CFG.outline;
+    ctx.beginPath(); ctx.arc(0,0,u.r*view.scale,0,Math.PI*2); ctx.stroke();
+    ctx.fillStyle=u.color; ctx.beginPath(); ctx.arc(0,0,u.r*view.scale,0,Math.PI*2); ctx.fill();
+    ctx.restore();
 
-    // Health bar (above unit)
-    var barW = u.r*2*view.scale, barH = 4*view.scale;
-    var hpPct = clamp(u.hp / u.maxHp, 0, 1);
-    var bx = p.x - barW/2, by = p.y - u.r*view.scale - 10*view.scale;
-    ctx.fillStyle = "#1a2a3f";
-    ctx.fillRect(bx, by, barW, barH);
-    ctx.fillStyle = (u.side==="player")?CFG.accentCyan:CFG.accentMagenta;
-    ctx.fillRect(bx, by, barW*hpPct, barH);
+    // health bar
+    var barW=u.r*2*view.scale, barH=6*view.scale, hpPct=clamp(u.hp/u.maxHp,0,1);
+    var bx=p.x-barW/2, by=p.y-u.r*view.scale-14*view.scale;
+    ctx.fillStyle="#000"; ctx.fillRect(bx-2,by-2,barW+4,barH+4);
+    ctx.fillStyle=(u.side==="player")?CFG.accentCyan:CFG.accentMagenta;
+    ctx.fillRect(bx,by,barW*hpPct,barH);
 
-    // selection ring for player's selected unit
-    if (u === player.selectedUnit){
-      ctx.strokeStyle = CFG.accentCyan;
-      ctx.lineWidth = 4*view.scale;
-      ctx.beginPath(); ctx.arc(p.x, p.y, (u.r+5)*view.scale, 0, Math.PI*2); ctx.stroke();
+    if (u===player.selectedUnit){
+      ctx.strokeStyle=CFG.accentCyan; ctx.lineWidth=4*view.scale;
+      ctx.beginPath(); ctx.arc(p.x,p.y,(u.r+7)*view.scale,0,Math.PI*2); ctx.stroke();
     }
   }
-  ctx.restore();
 }
 
 function drawBullets(){
-  ctx.save();
   for (var i=0;i<bullets.length;i++){
     var b=bullets[i], p=toScreen(b.x,b.y);
+    ctx.lineWidth = (b.type==="beam" ? 6 : 3)*view.scale;
+    ctx.strokeStyle = CFG.outline;
 
-    if (b.type==="dot"){ // BB pellets
-      ctx.fillStyle=b.color;
-      ctx.beginPath(); ctx.arc(p.x,p.y,b.r*view.scale,0,Math.PI*2); ctx.fill();
-    }
-    else if (b.type==="line"){ // Pistol slugs (shorter streak)
-      ctx.strokeStyle=b.color;
-      ctx.lineWidth=2*view.scale;
-      ctx.beginPath();
-      ctx.moveTo(p.x, p.y);
-      ctx.lineTo(p.x - b.vx*0.01, p.y - b.vy*0.01); // shortened streak
-      ctx.stroke();
-    }
-    else if (b.type==="rect"){ // AR squares
-      ctx.fillStyle=b.color;
-      var s=3*view.scale;
-      ctx.fillRect(p.x-s, p.y-s, s*2, s*2);
-    }
-    else if (b.type==="beam"){ // Laser cartoon beam
-      var len = 20 * view.scale;
-      var norm = Math.sqrt(b.vx*b.vx + b.vy*b.vy) || 1;
-      var dx = (b.vx/norm) * len;
-      var dy = (b.vy/norm) * len;
-
-      ctx.strokeStyle = "#ffffff";
-      ctx.lineWidth = 2*view.scale;
-      ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - dx, p.y - dy); ctx.stroke();
-
-      ctx.strokeStyle = b.color;
-      ctx.lineWidth = 4*view.scale;
-      ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - dx, p.y - dy); ctx.stroke();
-
-      var grad = ctx.createLinearGradient(p.x, p.y, p.x - dx, p.y - dy);
-      grad.addColorStop(0, b.color);
-      grad.addColorStop(1, "rgba(255,255,255,0)");
-      ctx.strokeStyle = grad;
-      ctx.lineWidth = 8*view.scale;
-      ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - dx, p.y - dy); ctx.stroke();
+    if (b.type==="dot"){
+      ctx.beginPath(); ctx.arc(p.x,p.y,(b.r*view.scale)+1,0,Math.PI*2); ctx.stroke();
+      ctx.fillStyle=b.color; ctx.beginPath(); ctx.arc(p.x,p.y,b.r*view.scale,0,Math.PI*2); ctx.fill();
+    } else if (b.type==="line"){
+      var lx=p.x-b.vx*0.012, ly=p.y-b.vy*0.012;
+      ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(lx,ly); ctx.stroke();
+      ctx.strokeStyle=b.color; ctx.lineWidth=4*view.scale;
+      ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(lx,ly); ctx.stroke();
+    } else if (b.type==="rect"){
+      var s=4*view.scale;
+      ctx.strokeStyle=CFG.outline; ctx.lineWidth=3*view.scale; ctx.strokeRect(p.x-s-1,p.y-s-1,s*2+2,s*2+2);
+      ctx.fillStyle=b.color; ctx.fillRect(p.x-s,p.y-s,s*2,s*2);
+    } else if (b.type==="beam"){
+      var len=24*view.scale, norm=Math.sqrt(b.vx*b.vx+b.vy*b.vy)||1, dx=(b.vx/norm)*len, dy=(b.vy/norm)*len;
+      ctx.strokeStyle=CFG.outline; ctx.lineWidth=6*view.scale;
+      ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(p.x-dx,p.y-dy); ctx.stroke();
+      ctx.strokeStyle="#ffffff"; ctx.lineWidth=3*view.scale;
+      ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(p.x-dx,p.y-dy); ctx.stroke();
+      var grad=ctx.createLinearGradient(p.x,p.y,p.x-dx,p.y-dy);
+      grad.addColorStop(0,b.color); grad.addColorStop(1,"rgba(255,255,255,0)");
+      ctx.strokeStyle=grad; ctx.lineWidth=10*view.scale;
+      ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(p.x-dx,p.y-dy); ctx.stroke();
     } else {
-      ctx.fillStyle=b.color;
-      ctx.beginPath(); ctx.arc(p.x,p.y,b.r*view.scale,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(p.x,p.y,b.r*view.scale,0,Math.PI*2); ctx.stroke();
+      ctx.fillStyle=b.color; ctx.beginPath(); ctx.arc(p.x,p.y,b.r*view.scale,0,Math.PI*2); ctx.fill();
     }
   }
-  ctx.restore();
 }
 
 function drawFooter(){
@@ -684,130 +597,144 @@ function drawFooter(){
   drawUnitCards();
   drawScores();
 }
-
 function drawEnergyBars(){
   var L=energyLayout();
-  ctx.save();
   for (var i=0;i<L.bars;i++){
-    var filled = i < Math.floor(player.energy);
-    var seg = { x:L.startX + i*(L.segW+L.gap), y:L.y, w:L.segW, h:L.segH };
-    var s = rectToScreen(seg);
-    ctx.fillStyle = filled ? CFG.accentCyan : "#0c1f36";
-    ctx.fillRect(s.x,s.y,s.w,s.h);
+    var filled=i<Math.floor(player.energy);
+    var seg={x:L.startX+i*(L.segW+L.gap), y:L.y, w:L.segW, h:L.segH};
+    var s=rectToScreen(seg);
+    ctx.fillStyle=filled?CFG.accentCyan:"#ffffff";
+    roundRect(ctx,s.x,s.y,s.w,s.h,8*view.scale); ctx.fill();
+    ctx.lineWidth=CFG.uiOutline*view.scale; ctx.strokeStyle=CFG.outline; ctx.stroke();
   }
-  ctx.restore();
 }
-
 function drawUnitCards(){
   var L=cardsLayout();
-  ctx.save();
   for (var i=0;i<UNITS.length;i++){
-    var rect={ x:L.startX+i*(L.size+L.gap), y:L.y, w:L.size, h:L.size };
+    var rect={x:L.startX+i*(L.size+L.gap), y:L.y, w:L.size, h:L.size};
     var sc=rectToScreen(rect);
-
-    ctx.shadowColor=CFG.shadowColor; ctx.shadowBlur=CFG.uiShadow;
     ctx.fillStyle=(i===player.selectedCard)?CFG.cardOn:CFG.cardOff;
-    ctx.fillRect(sc.x,sc.y,sc.w,sc.h);
+    roundRect(ctx,sc.x,sc.y,sc.w,sc.h,18*view.scale); ctx.fill();
+    ctx.lineWidth=CFG.uiOutline*view.scale; ctx.strokeStyle=CFG.outline; ctx.stroke();
 
-    // Unit circle preview
-    ctx.shadowBlur=0; ctx.fillStyle=UNITS[i].color;
-    ctx.beginPath(); ctx.arc(sc.x+sc.w/2, sc.y+sc.h*0.45, (L.size*0.20)*view.scale, 0, Math.PI*2); ctx.fill();
+    // larger icon, centered higher to leave room for text
+    ctx.fillStyle=UNITS[i].color;
+    var cx=sc.x+sc.w/2, cy=sc.y+sc.h*0.35, rr=(L.size*0.26)*view.scale;
+    ctx.beginPath(); ctx.arc(cx,cy,rr,0,Math.PI*2); ctx.fill();
+    ctx.lineWidth=CFG.uiOutline*view.scale; ctx.strokeStyle=CFG.outline; ctx.stroke();
 
-    // Labels
-    ctx.fillStyle=CFG.textLight; ctx.font=(24*view.scale)+"px monospace"; ctx.textAlign="center";
-    ctx.fillText(UNITS[i].id, sc.x+sc.w/2, sc.y+sc.h-32*view.scale);
-    ctx.fillStyle=CFG.textDim; ctx.font=(22*view.scale)+"px monospace";
-    ctx.fillText("Cost "+UNITS[i].cost, sc.x+sc.w/2, sc.y+sc.h-10*view.scale);
+    // text below icon
+    ctx.fillStyle=CFG.cardText; ctx.textAlign="center";
+    ctx.font=(26*view.scale)+"px comic sans ms, system-ui, sans-serif";
+    ctx.fillText(UNITS[i].id, sc.x+sc.w/2, sc.y+sc.h*0.75);
+    ctx.font=(22*view.scale)+"px comic sans ms, system-ui, sans-serif";
+    ctx.fillText("Cost "+UNITS[i].cost, sc.x+sc.w/2, sc.y+sc.h*0.90);
   }
-  ctx.restore();
 }
-
 function drawScores(){
-  var left=toScreen(CFG.arenaPad, CFG.designH-CFG.footerH-16);
-  var right=toScreen(CFG.designW-CFG.arenaPad, CFG.designH-CFG.footerH-16);
-  var mid=toScreen(CFG.designW/2, CFG.designH-CFG.footerH-16);
-
-  ctx.save();
-  ctx.fillStyle=CFG.textLight;
-  ctx.font=(28*view.scale)+"px monospace";
+  var offset = 0; // lowered to avoid clipping the rounded battlefield border
+  var left=toScreen(CFG.arenaPad, CFG.designH-CFG.footerH-offset);
+  var right=toScreen(CFG.designW-CFG.arenaPad, CFG.designH-CFG.footerH-offset);
+  var mid=toScreen(CFG.designW/2, CFG.designH-CFG.footerH-offset);
+  ctx.fillStyle=CFG.cardText;
+  ctx.font=(30*view.scale)+"px comic sans ms, system-ui, sans-serif";
   ctx.textAlign="left";  ctx.fillText("Base HP: "+Math.floor(player.hp), left.x, left.y);
   ctx.textAlign="right"; ctx.fillText("Enemy HP: "+Math.floor(enemy.hp), right.x, right.y);
   ctx.textAlign="center";ctx.fillText("Score: "+player.score+" | "+enemy.score, mid.x, mid.y);
-  ctx.restore();
 }
 
 /* =========================
-   Modals (simplified start, square ads)
+   Modals
    ========================= */
 function drawStartModal(){
-  var box={ x:CFG.designW*0.08, y:CFG.designH*0.10, w:CFG.designW*0.84, h:CFG.designH*0.75 };
+  var box={ x:CFG.designW*0.10, y:CFG.designH*0.12, w:CFG.designW*0.80, h:CFG.designH*0.70 };
   var s=rectToScreen(box);
-  ctx.save();
-  ctx.shadowColor=CFG.shadowColor; ctx.shadowBlur=CFG.uiShadow*2;
-  ctx.fillStyle="#10243f"; ctx.fillRect(s.x,s.y,s.w,s.h);
+  ctx.fillStyle="#fff7c4";
+  roundRect(ctx,s.x,s.y,s.w,s.h,24*view.scale); ctx.fill();
+  ctx.lineWidth=CFG.uiOutline*view.scale; ctx.strokeStyle=CFG.outline; ctx.stroke();
 
-  // Title
-  ctx.fillStyle=CFG.textLight; ctx.textAlign="center";
-  ctx.font=(72*view.scale)+"px monospace";
+  ctx.fillStyle=CFG.cardText; ctx.textAlign="center";
+  ctx.font=(76*view.scale)+"px comic sans ms, system-ui, sans-serif";
   ctx.fillText("microRTS", s.x+s.w/2, s.y+140*view.scale);
 
-  // Centered square ad placeholder
-  var adSize = Math.min(box.w, box.h) * 0.6;
-  var adRect = { x: box.x + (box.w - adSize)/2, y: box.y + (box.h - adSize)/2, w: adSize, h: adSize };
-  var ads = rectToScreen(adRect);
-  ctx.fillStyle="#143456";
-  ctx.fillRect(ads.x, ads.y, ads.w, ads.h);
+  var adW = s.w * 0.70, adH = adW;
+  var ax = s.x + (s.w - adW)/2, ay = s.y + s.h*0.30;
+  ctx.fillStyle="#ffe88a";
+  roundRect(ctx,ax,ay,adW,adH,18*view.scale); ctx.fill();
+  ctx.lineWidth=CFG.uiOutline*view.scale; ctx.strokeStyle=CFG.outline; ctx.stroke();
 
-  ctx.fillStyle=CFG.textDim;
-  ctx.font=(28*view.scale)+"px monospace";
-  ctx.fillText("Sponsored Ad", ads.x+ads.w/2, ads.y+ads.h/2+12*view.scale);
+  ctx.fillStyle=CFG.cardText; ctx.font=(34*view.scale)+"px comic sans ms, system-ui, sans-serif";
+  ctx.fillText("Sponsored Ad", ax+adW/2, ay+adH/2+14*view.scale);
 
-  // Start prompt
   ctx.fillStyle=CFG.accentBlue;
-  ctx.font=(36*view.scale)+"px monospace";
-  ctx.fillText("Tap anywhere to start", s.x+s.w/2, s.y+s.h-70*view.scale);
-
-  ctx.restore();
+  ctx.font=(40*view.scale)+"px comic sans ms, system-ui, sans-serif";
+  ctx.fillText("Tap anywhere to start", s.x+s.w/2, s.y+s.h-76*view.scale);
 }
 
 function drawEndModal(win){
-  var box={ x:CFG.designW*0.08, y:CFG.designH*0.10, w:CFG.designW*0.84, h:CFG.designH*0.75 };
+  var box={ x:CFG.designW*0.10, y:CFG.designH*0.12, w:CFG.designW*0.80, h:CFG.designH*0.70 };
   var s=rectToScreen(box);
-  ctx.save();
-  ctx.shadowColor=CFG.shadowColor; ctx.shadowBlur=CFG.uiShadow*2;
-  ctx.fillStyle="#10243f"; ctx.fillRect(s.x,s.y,s.w,s.h);
+  ctx.fillStyle="#fff7c4";
+  roundRect(ctx,s.x,s.y,s.w,s.h,24*view.scale); ctx.fill();
+  ctx.lineWidth=CFG.uiOutline*view.scale; ctx.strokeStyle=CFG.outline; ctx.stroke();
 
-  ctx.fillStyle=CFG.textLight; ctx.textAlign="center";
-  ctx.font=(68*view.scale)+"px monospace"; ctx.fillText(win?"Victory":"Defeat", s.x+s.w/2, s.y+140*view.scale);
-  ctx.font=(30*view.scale)+"px monospace"; ctx.fillStyle=CFG.textDim;
+  ctx.fillStyle=CFG.cardText; ctx.textAlign="center";
+  ctx.font=(74*view.scale)+"px comic sans ms, system-ui, sans-serif";
+  ctx.fillText(win?"Victory!":"Defeat!", s.x+s.w/2, s.y+140*view.scale);
+  ctx.font=(34*view.scale)+"px comic sans ms, system-ui, sans-serif";
   ctx.fillText("Score: "+player.score, s.x+s.w/2, s.y+190*view.scale);
 
-  // Square, centered ad
-  var adW = box.w * 0.70, adH = adW;
-  var adRect = { x: box.x + (box.w - adW)/2, y: box.y + box.h*0.32, w: adW, h: adH };
-  var ads = rectToScreen(adRect);
-  ctx.fillStyle="#143456"; ctx.fillRect(ads.x,ads.y,ads.w,ads.h);
-  ctx.fillStyle=CFG.textDim; ctx.font=(28*view.scale)+"px monospace";
-  ctx.fillText("Sponsored Ad", ads.x+ads.w/2, ads.y+ads.h/2+12*view.scale);
+  // Ad inside modal
+  var adW = s.w * 0.70, adH = adW;
+  var ax = s.x + (s.w - adW)/2, ay = s.y + s.h*0.30;
+  ctx.fillStyle="#ffe88a";
+  roundRect(ctx,ax,ay,adW,adH,18*view.scale); ctx.fill();
+  ctx.lineWidth=CFG.uiOutline*view.scale; ctx.strokeStyle=CFG.outline; ctx.stroke();
+  ctx.fillStyle=CFG.cardText; ctx.font=(34*view.scale)+"px comic sans ms, system-ui, sans-serif";
+  ctx.fillText("Sponsored Ad", ax+adW/2, ay+adH/2+14*view.scale);
 
-  // Restart button
-  var bw=box.w*0.60, bh=CFG.designH*0.10;
-  var btn={ x:box.x+(box.w-bw)/2, y:box.y+box.h-bh-CFG.designH*0.04, w:bw, h:bh };
-  var bs=rectToScreen(btn);
-  ctx.fillStyle=win?CFG.accentGold:CFG.accentMagenta; ctx.fillRect(bs.x,bs.y,bs.w,bs.h);
-  ctx.fillStyle="#0b1e35"; ctx.font=(36*view.scale)+"px monospace"; ctx.fillText("Restart", bs.x+bs.w/2, bs.y+bs.h/2+14*view.scale);
+  // Restart button: short, inside modal, safely below ad
+  var bw = s.w * 0.35;
+  var bh = CFG.designH * 0.040;
+  var bx = s.x + (s.w - bw) / 2;
+  var desiredBy = ay + adH + CFG.designH * 0.05; // more padding
+  var maxBy = s.y + s.h - bh - CFG.designH * 0.015; // bottom margin
+  var by = Math.min(desiredBy, maxBy);
 
-  if (input.down){
-    var p={ x:input.x, y:input.y, w:1, h:1 };
-    if (rectsOverlap(p, btn)){ resetGame(); state="start"; input.down=false; }
+  ctx.fillStyle = win ? CFG.accentGold : CFG.accentMagenta;
+  roundRect(ctx,bx,by,bw,bh,12*view.scale); ctx.fill();
+  ctx.lineWidth = CFG.uiOutline * view.scale; ctx.strokeStyle = CFG.outline; ctx.stroke();
+  ctx.fillStyle = CFG.cardText;
+  ctx.font = (28 * view.scale) + "px comic sans ms, system-ui, sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("Restart", bx + bw / 2, by + bh / 2 + 9 * view.scale);
+
+  // click detection (virtual coords)
+  if (input.down) {
+    var vTopLeft = toVirtual(bx, by);
+    var btnVirt = { x: vTopLeft.x, y: vTopLeft.y, w: bw / view.scale, h: bh / view.scale };
+    var p = { x: input.x, y: input.y, w: 1, h: 1 };
+    if (rectsOverlap(p, btnVirt)) { resetGame(); state="start"; gameStartDelay=0; input.down=false; }
   }
-  ctx.restore();
 }
 
 /* =========================
-   Utilities
+   Drawing helper
    ========================= */
-function rectsOverlap(a,b){ return !(a.x+a.w<b.x || a.x>b.x+b.w || a.y+a.h<b.y || a.y>b.y+b.h); }
+function roundRect(ctx,x,y,w,h,r){
+  var rx=Math.min(r,w/2), ry=Math.min(r,h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+rx,y);
+  ctx.lineTo(x+w-rx,y);
+  ctx.quadraticCurveTo(x+w,y,x+w,y+ry);
+  ctx.lineTo(x+w,y+h-ry);
+  ctx.quadraticCurveTo(x+w,y+h,x+w-rx,y+h);
+  ctx.lineTo(x+rx,y+h);
+  ctx.quadraticCurveTo(x,y+h,x,y+h-ry);
+  ctx.lineTo(x,y+ry);
+  ctx.quadraticCurveTo(x,y,x+rx,y);
+  ctx.closePath();
+}
 
 })();
 </script>
